@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>快篩試劑地圖</title>
+		<!-- <script src="https://unpkg.com/vue@next"></script> -->
+		<script src="js/v3.2.8/vue.global.prod.js" type="text/javascript" charset="utf-8"></script>
+		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+		<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+		<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+	</head>
+	<body>
+		<div id="app">
+				<div class="container-fluid">
+					<div class="row no-gutters">
+						<!-- 選擇所在區域 -->
+						<div class="toolbox col-3 p-2 bg-white">
+							<div class="form-group d-flex">
+							  <h3>選擇搜尋的區域</h3>
+							</div>
+							<div class="form-group d-flex">
+							  <label for="cityName" class="col-form-label mr-2 text-right">縣市</label>
+							  <div class="flex-fill">
+									<select id="cityName" class="form-control" v-model="select.city" @change="filterData_city">
+										<option :value="c.CityName" v-for="c in CityName" :key="c">
+										  {{ c.CityName }}
+										</option>
+									</select>
+							  </div>
+							</div>
+							<div class="form-group d-flex">
+								<label for="area" class="col-form-label mr-2 text-right">地區</label>
+								<div class="flex-fill">
+									<select id="area" class="form-control" v-model="select.area"  @change="filterData">
+										<option :value="a.AreaName" v-for="a in area_data" :key="a.ZipCode">
+										{{a.AreaName}}
+										</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-group d-flex">
+								<h4>您選擇的地區:{{select.city}}{{select.area}}</h5>	
+							</div>
+						</div>
+						<!-- 顯示藥局位置 -->
+					<div class="col-9">
+						<div id="map">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<style>
+			 #map {
+			    height: 100vh;
+			  }
+		</style>
+
+		<script>
+			const App = {
+				data() {
+					return {
+						CityName:[],
+						select:{
+							city: '臺北市',
+							area: '中正區',
+						},
+						data:[],
+						fil_data:[],
+						area_data:[]
+					}
+				},
+				mounted(){
+					axios.get("./CityCountyData.json").then(res=>{
+						console.log(res.data);
+						this.CityName=res.data;
+						});
+					axios.get("https://data.startupterrace.tw/api/dataset_api/6af1cf24-75c6-4b7b-bf5c-9f38ccafdf4a").then(res=>{
+						console.log(res.data);
+						this.data=res.data;
+						let se=this.select.city+this.select.area
+						this.area_data=this.CityName.find((city) => city.CityName === this.select.city).AreaList
+						this.fil_data=this.data.filter(item=>{
+							return item.address.match(se)
+						})
+						});
+					map=L.map('map',{
+						center: [25.042474, 121.513729], // 台北中心點
+						zoom: 18
+					});
+					L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+						attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+						maxZoom:18,
+					}).addTo(map)
+				},
+				methods:{
+					filterData:function(){
+						let vm=this;
+						let se=vm.select.city+vm.select.area
+						vm.fil_data=vm.data.filter(item=>{
+						return item.address.match(se)
+					})
+					},
+					filterData_city:function(){
+						let vm=this;
+						vm.area_data=vm.CityName.find((city) => city.CityName === vm.select.city).AreaList
+						vm.select.area=vm.area_data[0].AreaName
+						let se=vm.select.city+vm.select.area
+						vm.fil_data=vm.data.filter(item=>{
+						return item.address.match(se)
+					})
+					},
+					updateMap(){
+						map.eachLayer((layer) => {
+						      if (layer instanceof L.Marker) {
+						        map.removeLayer(layer);
+						      }
+						    });
+					      this.fil_data.forEach((pharmacy) => {
+					        // 透過藥局經緯度疊加標記
+					        L.marker([
+					          pharmacy.latitude,
+					          pharmacy.longitude,
+					        ]).addTo(map).bindPopup(`<p><strong style="font-size: 20px;">${pharmacy.name}</strong></p>
+							<strong style="font-size: 16px; color: #d45345;">廠牌:${pharmacy.brand}</strong><br>
+          <strong style="font-size: 16px; color: #d45345;">快篩試劑剩餘:${pharmacy.stock} 個</strong><br>
+          地址: ${pharmacy.address}<br>
+          電話: ${pharmacy.telephone}<br>
+		  備註: ${pharmacy.remark}<br>
+          <small>最後更新時間: ${pharmacy.source_time}</small>`);;
+					      });
+					    }
+				},
+				watch:{
+					fil_data(value){
+						this.updateMap();
+					}
+				}
+			};
+			Vue.createApp(App).mount('#app');
+		</script>
+	</body>
+</html>

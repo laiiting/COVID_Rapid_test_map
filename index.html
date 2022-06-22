@@ -40,8 +40,13 @@
 									</select>
 								</div>
 							</div>
+							<hr style="margin: 10px 0px;">
 							<div class="form-group d-flex">
-								<h4 v-cloak>您選擇的地區:{{select.city}}{{select.area}}</h5>	
+								<h4 v-cloak>您選擇的地區:{{select.city}}{{select.area}}</h4>
+							</div>
+							<div class="form-group d-flex">
+								<span style="color:red">如果選單沒有地區請重新整理</span>
+								<button class="btn btn-outline-primary btn-sm" onclick="location.reload()" style="margin: 0px 5px;">重新整理</button>
 							</div>
 						</div>
 						<!-- 顯示藥局位置 -->
@@ -87,8 +92,8 @@
 						})
 						});
 					map=L.map('map',{
-						center: [25.042474, 121.513729], // 台北中心點
-						zoom: 18
+						center: [23.97565,120.9738819], // 台灣中心點
+						zoom: 8
 					});
 					L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 						attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -125,7 +130,7 @@
 					          pharmacy.longitude,
 					        ]).addTo(map).bindPopup(`<p><strong style="font-size: 20px;">${pharmacy.name}</strong></p>
 							<strong style="font-size: 16px; color: #d45345;">廠牌:${pharmacy.brand}</strong><br>
-          <strong style="font-size: 16px; color: #d45345;">快篩試劑剩餘:${pharmacy.stock} 個</strong><br>
+          <strong style="font-size: 16px; color: #ff007f;">快篩試劑剩餘:${pharmacy.stock} 個</strong><br>
           地址: ${pharmacy.address}<br>
           電話: ${pharmacy.telephone}<br>
 		  備註: ${pharmacy.remark}<br>
